@@ -1,5 +1,7 @@
-pub mod r#type;
 pub mod run;
+pub mod r#type;
+pub mod typed;
+pub mod value;
 
 use r#type::Type;
 

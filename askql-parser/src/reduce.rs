@@ -1,28 +1,11 @@
+use crate::value::{Number, Value};
 use log::info;
 use regex::Regex;
-
-#[derive(Clone, Debug)]
-#[allow(missing_docs)]
-pub enum Value {
-    Null,
-    Boolean(bool),
-    Number(Number),
-    String(String),
-}
-
-#[derive(Clone, Debug)]
-pub struct Number(pub String);
 
 pub trait Reducer<T> {
     fn node(&self, name: String, children: Option<Vec<T>>) -> T;
     fn id(&self, name: String) -> T;
     fn value(&self, value: Value) -> T;
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Null
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -76,7 +59,7 @@ impl Parser {
         T: std::fmt::Debug,
     {
         if self.code.is_empty() {
-            return Err(ParseError::EmptyProgram)
+            return Err(ParseError::EmptyProgram);
         }
         self.program(&reducer)
     }
@@ -132,7 +115,10 @@ impl Parser {
             self.index += 1;
         }
         if self.index == start {
-            return Err(ParseError::Unknown(format!("id error at index: {}", self.index)));
+            return Err(ParseError::Unknown(format!(
+                "id error at index: {}",
+                self.index
+            )));
         }
         return Ok(self.code.get(start..self.index).unwrap());
     }
@@ -144,7 +130,10 @@ impl Parser {
         let value = self.expression(reducer);
         self.whitespace();
         if self.index < self.code.len() {
-            return Err(ParseError::Unknown(format!("program error at index: {}", self.index)));
+            return Err(ParseError::Unknown(format!(
+                "program error at index: {}",
+                self.index
+            )));
         }
         value
     }
@@ -236,12 +225,19 @@ impl Parser {
             self.index += 1;
         }
         if self.index == self.code.len() {
-            return Err(ParseError::Unknown(format!("string error at index: {}", self.index)));
+            return Err(ParseError::Unknown(format!(
+                "string error at index: {}",
+                self.index
+            )));
         }
         let end = self.index;
         self.process(quote)?;
         Ok(reducer.value(Value::String(
-            self.code.get(start..end).expect("Error in String").iter().collect(),
+            self.code
+                .get(start..end)
+                .expect("Error in String")
+                .iter()
+                .collect(),
         )))
     }
 

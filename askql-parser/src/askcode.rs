@@ -1,11 +1,12 @@
 use crate::reduce::Reducer;
+use crate::value::Value;
 use std::collections::BTreeMap;
 use std::fmt;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AskCodeOrValue {
     Value(Value),
-    AskCode(AskCode)
+    AskCode(AskCode),
 }
 
 impl AskCodeOrValue {
@@ -18,34 +19,15 @@ impl AskCodeOrValue {
     }
 }
 
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Value {
-    Null,
-    Boolean(bool),
-    Number(String),
-    String(String),
-    Object(BTreeMap<String, Value>),
-}
-
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct AskCode {
     pub name: String,
-    pub params: Option<Vec<AskCodeOrValue>>
+    pub params: Option<Vec<AskCodeOrValue>>,
 }
 
 impl AskCode {
     pub fn new(name: String, params: Option<Vec<AskCodeOrValue>>) -> Self {
-        Self {
-            name,
-            params
-        }
+        Self { name, params }
     }
 }
 pub trait AskCodeTrait: std::fmt::Debug + Clone + Sized {
@@ -67,18 +49,16 @@ pub struct AskCodeReducer {}
 
 impl Reducer<AskCodeOrValue> for AskCodeReducer {
     fn node(&self, name: String, children: Option<Vec<AskCodeOrValue>>) -> AskCodeOrValue {
-        AskCodeOrValue::new_ask_code(AskCode { name, params: children })
+        AskCodeOrValue::new_ask_code(AskCode {
+            name,
+            params: children,
+        })
     }
     fn id(&self, name: String) -> AskCodeOrValue {
         AskCodeOrValue::new_ask_code(AskCode { name, params: None })
     }
-    fn value(&self, value: crate::reduce::Value) -> AskCodeOrValue {
-        match value {
-            crate::reduce::Value::Null => AskCodeOrValue::new_value(Value::Null),
-            crate::reduce::Value::Boolean(bool) => AskCodeOrValue::new_value(Value::Boolean(bool)),
-            crate::reduce::Value::Number(num) => AskCodeOrValue::new_value(Value::Number(num.0)),
-            crate::reduce::Value::String(string) => AskCodeOrValue::new_value(Value::String(string)),
-        }
+    fn value(&self, value: Value) -> AskCodeOrValue {
+        AskCodeOrValue::new_value(value)
     }
 }
 
