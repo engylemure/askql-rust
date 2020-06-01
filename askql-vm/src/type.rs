@@ -1,14 +1,14 @@
-use askql_parser::AskCode;
-use serde::{Serialize, Deserialize};
+use askql_parser::{AskCode, AskCodeOrValue, Number, Value};
+use serde::{Deserialize, Serialize};
 
-pub trait Type {
+pub trait Type: Serialize + std::fmt::Debug {
     fn name() -> String;
     fn validate<T: Type>(value: T) -> bool {
         true
     }
 }
 
-impl<T> Type for Option<T> {
+impl<T: Type> Type for Option<T> {
     fn name() -> String {
         "empty".to_string()
     }
@@ -90,7 +90,7 @@ impl Type for Number {
 
 impl Type for AskCode {
     fn name() -> String {
-        "code".to_strign()
+        "code".to_string()
     }
 
     fn validate<U: Type>(_value: U) -> bool {
@@ -98,16 +98,25 @@ impl Type for AskCode {
     }
 }
 
-
-#[derive(Debug)]
-pub enum Types {
-    Empty,
-    Boolean(bool),
-    Int(i32),
-    Float(f32),
-    Number(Number),
-    String(String),
-    Any(Box<dyn Type + Serialize + Deserialize + Debug>)
+pub struct TypedValue {
+    pub r#type: ScalarType,
+    pub value: Value,
 }
 
-pub struct Number(String);
+impl TypedValue {
+    pub fn new(r#type: ScalarType, value: Value) -> Self {
+        Self { r#type, value }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub enum ScalarType {
+    Null,
+    Boolean,
+    Int,
+    Float,
+    List,
+    Any,
+    Code,
+    Other(String),
+}

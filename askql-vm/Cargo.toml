@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 askql-parser = { path = "../askql-parser", version = "0.1.0" }
 serde = "1.0"
+async-trait = "0.1.31"
+futures = "0.3"
+tokio = { version = "0.2", features = ["full"] }

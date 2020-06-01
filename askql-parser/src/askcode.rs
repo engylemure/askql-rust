@@ -3,7 +3,7 @@ use crate::value::Value;
 use std::collections::BTreeMap;
 use std::fmt;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub enum AskCodeOrValue {
     Value(Value),
     AskCode(AskCode),
@@ -19,7 +19,7 @@ impl AskCodeOrValue {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub struct AskCode {
     pub name: String,
     pub params: Option<Vec<AskCodeOrValue>>,

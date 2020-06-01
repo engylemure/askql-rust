@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate serde;
 pub mod askcode;
 pub use askcode::*;
 pub mod parse;

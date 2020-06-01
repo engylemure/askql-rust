@@ -1,7 +1,8 @@
+pub mod resource;
+pub mod resources;
 pub mod run;
 pub mod r#type;
 pub mod typed;
-pub mod value;
 
 use r#type::Type;
 

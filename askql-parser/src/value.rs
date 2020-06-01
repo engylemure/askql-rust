@@ -1,7 +1,8 @@
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 #[allow(missing_docs)]
 pub enum Value {
     Null,
@@ -67,7 +68,7 @@ impl fmt::Display for Value {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct Number(pub String);
 
 pub enum NumberConvertError {
