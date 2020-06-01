@@ -6,7 +6,9 @@ use std::marker::{Send, Sync};
 #[async_trait]
 pub trait Resource: Sync + Send {
     fn name(&self) -> String;
-    async fn resolver(&self, args: Vec<Value>) -> Value;
+    async fn resolver(&self, args: Vec<Value>) -> Value {
+        Value::Null
+    }
     async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
         let args = match args {
             Some(args) => args,

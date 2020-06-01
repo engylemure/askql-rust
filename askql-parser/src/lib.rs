@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate serde;
+#[macro_use]
+extern crate lazy_static;
 pub mod askcode;
 pub use askcode::*;
 pub mod parse;

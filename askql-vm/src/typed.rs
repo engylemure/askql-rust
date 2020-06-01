@@ -13,15 +13,3 @@ pub fn untyped(value: AskCodeOrValue) -> Value {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_untyped() {
-        let code_or_value = AskCodeOrValue::new_value(Value::Null);
-        dbg!(untyped(code_or_value));
-    }
-    #[test]
-    fn test_untyped2() {}
-}

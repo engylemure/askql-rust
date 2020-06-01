@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
+use regex::Regex;
 
 #[derive(Clone, Debug, Serialize)]
 #[allow(missing_docs)]
@@ -76,20 +77,20 @@ pub enum NumberConvertError {
 }
 
 impl Number {
-    pub fn is_number(&self) -> bool {
-        todo!()
-    }
     pub fn is_int(&self) -> bool {
-        todo!()
+       !self.is_float()
     }
     pub fn is_float(&self) -> bool {
-        todo!()
+        lazy_static! {
+            static ref IS_FLOAT_REGEX: Regex = Regex::new(r#"^[-+]?\d*\.?\d*$"#).unwrap();
+        }
+        IS_FLOAT_REGEX.is_match(&self.0)
     }
     pub fn to_int(self) -> Result<i32, NumberConvertError> {
         use NumberConvertError::*;
         self.0.parse().map_err(|_| NotANumber)
     }
-    pub fn to_flot(self) -> Result<f32, NumberConvertError> {
+    pub fn to_float(self) -> Result<f32, NumberConvertError> {
         use NumberConvertError::*;
         self.0.parse().map_err(|_| NotANumber)
     }
