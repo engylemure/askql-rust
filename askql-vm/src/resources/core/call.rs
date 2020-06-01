@@ -2,6 +2,7 @@ use crate::resource::Resource;
 use crate::run::AskVm;
 use askql_parser::{AskCode, AskCodeOrValue, Value};
 use async_trait::async_trait;
+use futures::future::join_all;
 
 pub struct CallResource;
 
@@ -22,8 +23,9 @@ impl Resource for CallResource {
             let arg_children: Vec<AskCodeOrValue> = statements.drain(1..).collect();
             let fun_child = statements.remove(0);
             let mut args = Vec::new();
+            let arg_children = join_all(arg_children.into_iter().map(move |arg| vm.run(arg, None))).await;
             for arg in arg_children {
-                if let Ok(arg) = vm.run(arg, None).await {
+                if let Ok(arg) = arg {
                     args.push(arg);
                 }
             }

@@ -82,7 +82,7 @@ impl Number {
     }
     pub fn is_float(&self) -> bool {
         lazy_static! {
-            static ref IS_FLOAT_REGEX: Regex = Regex::new(r#"^[-+]?\d*\.?\d*$"#).unwrap();
+            static ref IS_FLOAT_REGEX: Regex = Regex::new(r#"^[-+]?\d*\.\d*$"#).unwrap();
         }
         IS_FLOAT_REGEX.is_match(&self.0)
     }
