@@ -1,9 +1,12 @@
-use serde::Serialize;
+use regex::Regex;
+use serde::{
+    ser::{SerializeMap, SerializeSeq, SerializeStruct},
+    Serialize, Serializer,
+};
 use std::collections::BTreeMap;
 use std::fmt;
-use regex::Regex;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub enum Value {
     Null,
@@ -14,6 +17,47 @@ pub enum Value {
     String(String),
     Object(BTreeMap<String, Value>),
     List(Vec<Value>),
+}
+
+impl Serialize for Value {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Value::Null => serializer.serialize_none(),
+            Value::String(s) => serializer.serialize_str(s),
+            Value::Number(n) => {
+                if n.is_float() {
+                    if let Ok(float) = n.to_float() {
+                        return serializer.serialize_f32(float);
+                    }
+                } else {
+                    if let Ok(int) = n.to_int() {
+                        return serializer.serialize_i32(int);
+                    }
+                }
+                serializer.serialize_i32(0)
+            }
+            Value::Int(i) => serializer.serialize_i32(*i),
+            Value::Float(float) => serializer.serialize_f32(*float),
+            Value::Boolean(b) => serializer.serialize_bool(*b),
+            Value::List(list) => {
+                let mut seq = serializer.serialize_seq(Some(list.len()))?;
+                for e in list {
+                    seq.serialize_element(e)?;
+                }
+                seq.end()
+            }
+            Value::Object(obj) => {
+                let mut map = serializer.serialize_map(Some(obj.len()))?;
+                for (k, v) in obj {
+                    map.serialize_entry(k, v)?;
+                }
+                map.end()
+            }
+        }
+    }
 }
 
 impl Default for Value {
@@ -61,11 +105,31 @@ impl Value {
     pub fn number(val: String) -> Self {
         Value::Number(Number(val))
     }
+    pub fn is_object(&self) -> bool {
+        if let Value::Object(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+    pub fn is_list(&self) -> bool {
+        if let Value::List(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+    pub fn is_null(&self) -> bool {
+        match self {
+            Value::Null => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }
 
@@ -78,7 +142,7 @@ pub enum NumberConvertError {
 
 impl Number {
     pub fn is_int(&self) -> bool {
-       !self.is_float()
+        !self.is_float()
     }
     pub fn is_float(&self) -> bool {
         lazy_static! {
@@ -86,11 +150,11 @@ impl Number {
         }
         IS_FLOAT_REGEX.is_match(&self.0)
     }
-    pub fn to_int(self) -> Result<i32, NumberConvertError> {
+    pub fn to_int(&self) -> Result<i32, NumberConvertError> {
         use NumberConvertError::*;
         self.0.parse().map_err(|_| NotANumber)
     }
-    pub fn to_float(self) -> Result<f32, NumberConvertError> {
+    pub fn to_float(&self) -> Result<f32, NumberConvertError> {
         use NumberConvertError::*;
         self.0.parse().map_err(|_| NotANumber)
     }

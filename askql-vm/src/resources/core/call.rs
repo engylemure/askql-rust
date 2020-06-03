@@ -16,14 +16,16 @@ impl Resource for CallResource {
         let mut statements = params
             .or(args.map(|args| {
                 args.into_iter()
-                    .map(|arg| AskCodeOrValue::Value(arg)).collect()
+                    .map(|arg| AskCodeOrValue::Value(arg))
+                    .collect()
             }))
             .unwrap_or(vec![]);
         if statements.len() > 0 {
             let arg_children: Vec<AskCodeOrValue> = statements.drain(1..).collect();
             let fun_child = statements.remove(0);
             let mut args = Vec::new();
-            let arg_children = join_all(arg_children.into_iter().map(move |arg| vm.run(arg, None))).await;
+            let arg_children =
+                join_all(arg_children.into_iter().map(move |arg| vm.run(arg, None))).await;
             for arg in arg_children {
                 if let Ok(arg) = arg {
                     args.push(arg);

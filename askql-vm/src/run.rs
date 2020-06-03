@@ -2,8 +2,8 @@ use crate::r#type::ScalarType;
 use crate::resource::Resource;
 use crate::typed::{typed, untyped};
 use askql_parser::{AskCode, AskCodeOrValue, Value};
-use std::collections::HashMap;
 use std::boxed::Box;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct RunOptions {
@@ -40,7 +40,7 @@ impl AskVm {
                 } else {
                     Ok(Value::Int(number.to_int().unwrap_or(0)))
                 }
-            },
+            }
             AskCodeOrValue::Value(value) => Ok(value),
             AskCodeOrValue::AskCode(code) => {
                 let options = &self.options.clone();
@@ -52,8 +52,6 @@ impl AskVm {
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -77,7 +75,7 @@ mod tests {
             Box::new(ask_resource),
             Box::new(call_resource),
             Box::new(get_resource),
-            Box::new(sum_resource)
+            Box::new(sum_resource),
         ];
         let vm = AskVm::new(RunOptions::new(resources));
         let ask_code = "ask(call(get('+'),2,3,4,5.2))";
@@ -98,7 +96,7 @@ mod tests {
             Box::new(call_resource),
             Box::new(get_resource),
             Box::new(sum_resource),
-            Box::new(minus_resource)
+            Box::new(minus_resource),
         ];
         let vm = AskVm::new(RunOptions::new(resources));
         let ask_code = "ask(call(get('-'),2,3,4,5.2))";
@@ -119,7 +117,7 @@ mod tests {
             Box::new(call_resource),
             Box::new(get_resource),
             Box::new(sum_resource),
-            Box::new(minus_resource)
+            Box::new(minus_resource),
         ];
         let vm = AskVm::new(RunOptions::new(resources));
         let ask_code = "ask(call(get('-'),call(get('-'),2,3,4,5.2), call(get('+'),2,3,4,5.2)))";

@@ -63,6 +63,7 @@ impl Parser {
         }
         self.program(&reducer)
     }
+
     fn delta(&self, delta: Delta) -> usize {
         use Delta::*;
         match delta {
@@ -70,6 +71,7 @@ impl Parser {
             None => self.index,
         }
     }
+
     fn step(&mut self, message: String) -> Result<(), ParseError> {
         self.steps += 1;
         match self.stop_after_steps {
@@ -90,10 +92,12 @@ impl Parser {
         let pos = self.delta(delta);
         return pos < self.code.len() && self.code[pos] == char;
     }
+
     fn is_at_regex(&self, regex: &Regex, delta: Delta) -> bool {
         let pos = self.delta(delta);
         return pos < self.code.len() && regex.is_match(&self.code[pos].to_string());
     }
+
     fn process(&mut self, char: char) -> Result<usize, ParseError> {
         if !self.is_at(char, Delta::None) {
             return Err(ParseError::Expecting(char));
@@ -102,11 +106,13 @@ impl Parser {
         self.index += 1;
         Ok(self.index)
     }
+
     fn whitespace(&mut self) {
         while self.is_at(' ', Delta::None) || self.is_at('\n', Delta::None) {
             self.index += 1
         }
     }
+
     fn id(&mut self) -> Result<&[char], ParseError> {
         self.whitespace();
         self.step("id".to_string())?;
@@ -122,6 +128,7 @@ impl Parser {
         }
         return Ok(self.code.get(start..self.index).unwrap());
     }
+
     fn program<U, R>(&mut self, reducer: &R) -> Result<U, ParseError>
     where
         R: Reducer<U>,
@@ -145,6 +152,7 @@ impl Parser {
     {
         self.whitespace();
         self.step("expression".to_string())?;
+
         if self.is_at('"', Delta::None) || self.is_at('\'', Delta::None) {
             return self.string(reducer);
         }

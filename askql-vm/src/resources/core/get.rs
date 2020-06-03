@@ -12,11 +12,17 @@ impl Resource for GetResource {
     }
     async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
         let AskCode { name, params } = code;
+        dbg!(&params);
+        dbg!(&args);
         if let Some(mut params) = params {
             if let AskCodeOrValue::Value(Value::String(name)) = params.remove(0) {
-                return vm.run(AskCodeOrValue::AskCode(AskCode::new(name, None)), args).await.unwrap_or(Value::Null);
+                dbg!(&args);
+                return vm
+                    .run(AskCodeOrValue::AskCode(AskCode::new(name, None)), args)
+                    .await
+                    .unwrap_or(Value::Null);
             }
-        } 
+        }
         Value::Null
     }
 }
