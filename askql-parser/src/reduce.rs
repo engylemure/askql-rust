@@ -187,7 +187,7 @@ impl Parser {
         let start = self.index;
         while self.index < self.code.len() && !self.is_at(close_char, Delta::None) {
             let value = self.expression(reducer)?;
-            self.step(format!("list item {:?}", value))?;
+            self.step(format!("list item {:#?}", value))?;
             values.push(value);
             self.whitespace();
             if !self.is_at(close_char, Delta::None) {

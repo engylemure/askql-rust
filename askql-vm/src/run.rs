@@ -8,15 +8,17 @@ use std::sync::Arc;
 
 pub struct RunOptions {
     pub resources: HashMap<String, Box<dyn Resource>>,
+    pub values: HashMap<String, Value>,
 }
 
 impl RunOptions {
-    pub fn new(resources: Vec<Box<dyn Resource>>) -> Self {
+    pub fn new(resources: Vec<Box<dyn Resource>>, values: HashMap<String, Value>) -> Self {
         Self {
             resources: resources
                 .into_iter()
                 .map(|resource| (resource.name(), resource))
                 .collect(),
+            values,
         }
     }
 }
@@ -43,10 +45,23 @@ impl AskVm {
             }
             AskCodeOrValue::Value(value) => Ok(value),
             AskCodeOrValue::AskCode(code) => {
+                dbg!(&code.name);
                 let options = &self.options.clone();
                 match options.resources.get(&code.name) {
-                    Some(resource) => Ok(resource.compute(self, code, args).await),
-                    None => return Err(()),
+                    Some(resource) => {
+                        Ok(resource.compute(self, code, args).await)
+                    },
+                    None => {
+                        match options.values.get(&code.name) {
+                            Some(value) => Ok(dbg!(value.clone())),
+                            None => {
+                                dbg!("Errrr");
+                                dbg!(&code);
+                                dbg!(&args);
+                                return Err(())
+                            }
+                        }
+                    },
                 }
             }
         }
@@ -61,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn basic_run() {
-        let vm = AskVm::new(RunOptions::new(vec![]));
+        let vm = AskVm::new(RunOptions::new(vec![], HashMap::new()));
         let code = AskCodeOrValue::Value(askql_parser::Value::Null);
         assert_eq!(vm.run(code, None).await, Ok(Value::Null))
     }
@@ -77,7 +92,7 @@ mod tests {
             Box::new(get_resource),
             Box::new(sum_resource),
         ];
-        let vm = AskVm::new(RunOptions::new(resources));
+        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('+'),2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None).await;
@@ -98,7 +113,7 @@ mod tests {
             Box::new(sum_resource),
             Box::new(minus_resource),
         ];
-        let vm = AskVm::new(RunOptions::new(resources));
+        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('-'),2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None).await;
@@ -119,7 +134,7 @@ mod tests {
             Box::new(sum_resource),
             Box::new(minus_resource),
         ];
-        let vm = AskVm::new(RunOptions::new(resources));
+        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('-'),call(get('-'),2,3,4,5.2), call(get('+'),2,3,4,5.2)))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None).await;

@@ -11,12 +11,9 @@ impl Resource for GetResource {
         "get".to_string()
     }
     async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
-        let AskCode { name, params } = code;
-        dbg!(&params);
-        dbg!(&args);
+        let AskCode { name, params } = dbg!(code);
         if let Some(mut params) = params {
             if let AskCodeOrValue::Value(Value::String(name)) = params.remove(0) {
-                dbg!(&args);
                 return vm
                     .run(AskCodeOrValue::AskCode(AskCode::new(name, None)), args)
                     .await

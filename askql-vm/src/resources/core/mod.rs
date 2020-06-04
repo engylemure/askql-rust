@@ -6,3 +6,7 @@ pub mod fun;
 pub use fun::*;
 pub mod get;
 pub use get::*;
+pub mod query;
+pub use query::*;
+pub mod fragment;
+pub use fragment::*;
