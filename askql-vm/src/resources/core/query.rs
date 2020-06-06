@@ -3,6 +3,7 @@ use crate::run::AskVm;
 use askql_parser::{AskCode, AskCodeOrValue, Value};
 use async_trait::async_trait;
 use futures::future::join_all;
+use std::collections::HashMap;
 
 pub struct NodeResource;
 
@@ -29,21 +30,22 @@ impl NodeResource {
                                         Some(mut params) => {
                                             let name_getter = params[0].clone();
                                             let name = vm
-                                                .run(name_getter, Some(vec![cloned_val.clone()]))
+                                                .run(name_getter, Some(vec![cloned_val.clone()]), None)
                                                 .await
                                                 .unwrap_or_default();
                                             let code = AskCodeOrValue::AskCode(AskCode::new(
                                                 code_name,
                                                 Some(params),
                                             ));
+                                            // dbg!(&cloned_val);
                                             let value = vm
                                             .run(
-                                                dbg!(code),
+                                                code,
                                                 Some(vec![cloned_val.clone()]),
+                                                None
                                             )
                                             .await
                                                 .unwrap_or_default();
-                                            
                                             return Value::List(vec![name, value]);
                                         }
                                         None => Value::Null,
@@ -73,8 +75,26 @@ impl NodeResource {
             }
             code => {
                 dbg!("Holla holla!");
-                vm.run(code, None).await.unwrap_or_default()
+                vm.run(code, None, None).await.unwrap_or_default()
             },
+        }
+    }
+
+    fn args_to_extended_options(&self, args: Option<Vec<Value>>) -> Option<std::collections::HashMap<String, AskCodeOrValue>> {
+        match args {
+            Some(mut args) => if args.len() > 0 { 
+                match args.remove(0) {
+                    Value::Object(obj) => {
+                        Some(obj.into_iter()
+                        .map(|(k, v)| {
+                            (k, AskCodeOrValue::Value(v))
+                        })
+                        .collect())
+                    },
+                    _ => None
+                }
+             } else { None },
+            None => None
         }
     }
 }
@@ -84,19 +104,17 @@ impl Resource for NodeResource {
     fn name(&self) -> String {
         "node".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
+    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
         let AskCode { name, params } = code;
         match params {
             Some(mut params) if params.len() >= 1 => {
                 let children: Vec<AskCodeOrValue> = params.drain(2..).collect();
-                let arg = match args {
-                    Some(mut args) => if args.len() > 0 { Some(args.remove(0)) } else { None },
-                    None => None
-                };
+                let extended_options = self.args_to_extended_options(args);
+                // dbg!(&extended_options);
                 let value_getter: AskCodeOrValue = params.remove(1);
-                dbg!(&value_getter);
-                let value = vm.run(value_getter, None).await.unwrap_or_default();
-                dbg!(&value);
+                // dbg!(&value_getter);
+                let value = vm.run(value_getter, None, extended_options).await.unwrap_or_default();
+                // dbg!(&value);
                 if let Value::List(list) = value {
                     Value::List(
                         join_all(
@@ -128,7 +146,7 @@ impl Resource for QueryResource {
     fn name(&self) -> String {
         "query".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
+    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
         let AskCode { name, params } = code;
         return self
             .0
@@ -146,6 +164,7 @@ impl Resource for QueryResource {
                     }),
                 ),
                 None,
+                extended_options
             )
             .await;
     }

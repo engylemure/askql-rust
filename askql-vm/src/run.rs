@@ -5,14 +5,15 @@ use askql_parser::{AskCode, AskCodeOrValue, Value};
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::sync::Arc;
+use futures::future::{BoxFuture, FutureExt};
 
 pub struct RunOptions {
     pub resources: HashMap<String, Box<dyn Resource>>,
-    pub values: HashMap<String, Value>,
+    pub values: HashMap<String, AskCodeOrValue>,
 }
 
 impl RunOptions {
-    pub fn new(resources: Vec<Box<dyn Resource>>, values: HashMap<String, Value>) -> Self {
+    pub fn new(resources: Vec<Box<dyn Resource>>, values: HashMap<String, AskCodeOrValue>) -> Self {
         Self {
             resources: resources
                 .into_iter()
@@ -34,37 +35,43 @@ impl AskVm {
         }
     }
 
-    pub async fn run(&self, code: AskCodeOrValue, args: Option<Vec<Value>>) -> Result<Value, ()> {
-        match code {
-            AskCodeOrValue::Value(Value::Number(number)) => {
-                if number.is_float() {
-                    Ok(Value::Float(number.to_float().unwrap_or(0.0)))
-                } else {
-                    Ok(Value::Int(number.to_int().unwrap_or(0)))
-                }
-            }
-            AskCodeOrValue::Value(value) => Ok(value),
-            AskCodeOrValue::AskCode(code) => {
-                dbg!(&code.name);
-                let options = &self.options.clone();
-                match options.resources.get(&code.name) {
-                    Some(resource) => {
-                        Ok(resource.compute(self, code, args).await)
-                    },
-                    None => {
-                        match options.values.get(&code.name) {
-                            Some(value) => Ok(dbg!(value.clone())),
+    pub fn run(&self, code: AskCodeOrValue, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> BoxFuture<Result<Value, ()>> {
+        let options = self.options.clone();
+        async move {
+            match code {
+                AskCodeOrValue::Value(Value::Number(number)) => {
+                    if number.is_float() {
+                        Ok(Value::Float(number.to_float().unwrap_or(0.0)))
+                    } else {
+                        Ok(Value::Int(number.to_int().unwrap_or(0)))
+                    }
+                },
+                AskCodeOrValue::Value(value) => Ok(value),
+                AskCodeOrValue::AskCode(code) => {
+                    // dbg!(&code.name);
+                    if let Some(ext_opt) = &extended_options {
+                        match ext_opt.get(&code.name) {
+                            Some(value) => return self.run(value.clone(), args, None).await,
                             None => {
-                                dbg!("Errrr");
-                                dbg!(&code);
-                                dbg!(&args);
+                                // dbg!("Errr");
+                            }
+                        };
+                    }
+                    match options.resources.get(&code.name) {
+                        Some(resource) => {
+                            Ok(resource.compute(self, code, args, extended_options).await)
+                        },
+                        None => match options.values.get(&code.name) {
+                            Some(value) => self.run(value.clone(), args, None).await,
+                            None => {
+                                // dbg!("Errr1");
                                 return Err(())
                             }
-                        }
-                    },
+                        },
+                    }
                 }
             }
-        }
+        }.boxed()
     }
 }
 
@@ -78,7 +85,7 @@ mod tests {
     async fn basic_run() {
         let vm = AskVm::new(RunOptions::new(vec![], HashMap::new()));
         let code = AskCodeOrValue::Value(askql_parser::Value::Null);
-        assert_eq!(vm.run(code, None).await, Ok(Value::Null))
+        assert_eq!(vm.run(code, None, None).await, Ok(Value::Null))
     }
     #[tokio::test]
     async fn sum_operation() {
@@ -95,7 +102,7 @@ mod tests {
         let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('+'),2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
-        let result = vm.run(code, None).await;
+        let result = vm.run(code, None, None).await;
         assert_eq!(Ok(Value::Float(14.2)), result);
     }
 
@@ -116,7 +123,7 @@ mod tests {
         let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('-'),2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
-        let result = vm.run(code, None).await;
+        let result = vm.run(code, None, None).await;
         assert_eq!(Ok(Value::Float(-14.2)), result);
     }
 
@@ -137,7 +144,7 @@ mod tests {
         let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
         let ask_code = "ask(call(get('-'),call(get('-'),2,3,4,5.2), call(get('+'),2,3,4,5.2)))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
-        let result = vm.run(code, None).await;
+        let result = vm.run(code, None, None).await;
         assert_eq!(Ok(Value::Int(0)), result);
     }
 }

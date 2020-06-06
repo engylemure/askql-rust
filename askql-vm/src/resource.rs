@@ -1,7 +1,8 @@
 use crate::run::{AskVm, RunOptions};
-use askql_parser::{AskCode, Value};
+use askql_parser::*;
 use async_trait::async_trait;
 use std::marker::{Send, Sync};
+use std::collections::HashMap;
 
 #[async_trait]
 pub trait Resource: Sync + Send {
@@ -9,13 +10,13 @@ pub trait Resource: Sync + Send {
     async fn resolver(&self, args: Vec<Value>) -> Value {
         Value::Null
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>) -> Value {
+    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
         let args = match args {
             Some(args) => args,
             None => {
                 let mut args = Vec::new();
                 for param in code.params.unwrap_or(vec![]) {
-                    if let Ok(value) = vm.run(param, None).await {
+                    if let Ok(value) = vm.run(param, None, None).await {
                         args.push(value)
                     }
                 }

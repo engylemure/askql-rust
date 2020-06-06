@@ -13,7 +13,7 @@ impl Resource for ConcatResource {
     async fn resolver(&self, args: Vec<Value>) -> Value {
         let string = args
             .into_iter()
-            .fold(String::new(), |mut acc, val| match dbg!(val) {
+            .fold(String::new(), |mut acc, val| match val {
                 Value::Int(integer) => format!("{}{}", acc, integer),
                 Value::Float(float) => format!("{}{}", acc, float),
                 Value::String(string) => {
