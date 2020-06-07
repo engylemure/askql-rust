@@ -10,12 +10,22 @@ impl Resource for GetResource {
     fn name(&self) -> String {
         "get".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
+    async fn compute(
+        &self,
+        vm: &AskVm,
+        code: AskCode,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> Value {
         let AskCode { name, params } = code;
         if let Some(mut params) = params {
             if let AskCodeOrValue::Value(Value::String(name)) = params.remove(0) {
                 return vm
-                    .run(AskCodeOrValue::AskCode(AskCode::new(name, None)), args, extended_options)
+                    .run(
+                        AskCodeOrValue::AskCode(AskCode::new(name, None)),
+                        args,
+                        extended_options,
+                    )
                     .await
                     .unwrap_or(Value::Null);
             }

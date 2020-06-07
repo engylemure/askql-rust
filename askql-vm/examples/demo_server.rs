@@ -5,7 +5,7 @@ extern crate log;
 use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 
-use askql_parser::{Value, AskCodeOrValue};
+use askql_parser::{AskCodeOrValue, Value};
 use askql_vm::resources::*;
 use askql_vm::run::{AskVm, RunOptions};
 
@@ -43,22 +43,44 @@ fn vm() -> AskVm {
         Box::new(query_resource),
         Box::new(fragment_resource),
         Box::new(lowercase_resource),
-        Box::new(uppercase_resource)
+        Box::new(uppercase_resource),
     ];
     let mut values = std::collections::HashMap::new();
-    values.insert("firstName".to_string(), AskCodeOrValue::new_value(Value::String("PrimeiroNome".to_string())));
-    values.insert("lastName".to_string(), AskCodeOrValue::new_value(Value::String("SegundoNome".to_string())));
+    values.insert(
+        "firstName".to_string(),
+        AskCodeOrValue::new_value(Value::String("PrimeiroNome".to_string())),
+    );
+    values.insert(
+        "lastName".to_string(),
+        AskCodeOrValue::new_value(Value::String("SegundoNome".to_string())),
+    );
     let mut friend0 = std::collections::BTreeMap::new();
     let mut friend1 = std::collections::BTreeMap::new();
     let mut friend2 = std::collections::BTreeMap::new();
     friend0.insert("id".to_string(), Value::Int(1));
-    friend0.insert("firstName".to_string(), Value::String("Friend 0".to_string()));
+    friend0.insert(
+        "firstName".to_string(),
+        Value::String("Friend 0".to_string()),
+    );
     friend1.insert("id".to_string(), Value::Int(2));
-    friend1.insert("firstName".to_string(), Value::String("Friend 1".to_string()));
+    friend1.insert(
+        "firstName".to_string(),
+        Value::String("Friend 1".to_string()),
+    );
     friend2.insert("id".to_string(), Value::Int(3));
-    friend2.insert("firstName".to_string(), Value::String("Friend 2".to_string()));
-    let friends = vec![Value::Object(friend0), Value::Object(friend1), Value::Object(friend2)];
-    values.insert("friends".to_string(), AskCodeOrValue::new_value(Value::List(friends)));
+    friend2.insert(
+        "firstName".to_string(),
+        Value::String("Friend 2".to_string()),
+    );
+    let friends = vec![
+        Value::Object(friend0),
+        Value::Object(friend1),
+        Value::Object(friend2),
+    ];
+    values.insert(
+        "friends".to_string(),
+        AskCodeOrValue::new_value(Value::List(friends)),
+    );
     AskVm::new(RunOptions::new(resources, values))
 }
 

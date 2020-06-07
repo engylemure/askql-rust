@@ -14,7 +14,7 @@ impl Resource for ToLowerCaseResource {
         if args.len() > 0 {
             match args.remove(0) {
                 Value::String(string) => Value::String(string.to_lowercase()),
-                value => value
+                value => value,
             }
         } else {
             Value::Null

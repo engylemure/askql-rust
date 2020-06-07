@@ -10,3 +10,5 @@ pub mod query;
 pub use query::*;
 pub mod fragment;
 pub use fragment::*;
+pub mod equals;
+pub use equals::*;

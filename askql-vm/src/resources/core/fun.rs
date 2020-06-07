@@ -7,7 +7,13 @@ use std::collections::HashMap;
 
 #[async_trait]
 pub trait FunResource: Resource {
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
+    async fn compute(
+        &self,
+        vm: &AskVm,
+        code: AskCode,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> Value {
         match args {
             Some(args) => {
                 let AskCode { params, .. } = code;

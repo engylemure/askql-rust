@@ -12,7 +12,13 @@ impl Resource for AskResource {
     fn name(&self) -> String {
         "ask".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
+    async fn compute(
+        &self,
+        vm: &AskVm,
+        code: AskCode,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> Value {
         FunResource::compute(self, vm, code, args, extended_options).await
     }
 }

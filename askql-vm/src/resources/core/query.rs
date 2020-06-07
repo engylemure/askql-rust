@@ -30,7 +30,11 @@ impl NodeResource {
                                         Some(mut params) => {
                                             let name_getter = params[0].clone();
                                             let name = vm
-                                                .run(name_getter, Some(vec![cloned_val.clone()]), None)
+                                                .run(
+                                                    name_getter,
+                                                    Some(vec![cloned_val.clone()]),
+                                                    None,
+                                                )
                                                 .await
                                                 .unwrap_or_default();
                                             let code = AskCodeOrValue::AskCode(AskCode::new(
@@ -39,12 +43,8 @@ impl NodeResource {
                                             ));
                                             // dbg!(&cloned_val);
                                             let value = vm
-                                            .run(
-                                                code,
-                                                Some(vec![cloned_val.clone()]),
-                                                None
-                                            )
-                                            .await
+                                                .run(code, Some(vec![cloned_val.clone()]), None)
+                                                .await
                                                 .unwrap_or_default();
                                             return Value::List(vec![name, value]);
                                         }
@@ -55,19 +55,20 @@ impl NodeResource {
                             _ => panic!(),
                         });
                         Value::Object(
-                            join_all(futures).await.into_iter().map(
-                                |val| {
-                                    match val {
-                                        Value::List(mut entries) => {
-                                            match (entries.remove(0), entries.remove(0)) {
-                                                (Value::String(key), val) => Some((key, val)),
-                                                _ => None
-                                            }
-                                        },
-                                        _ => None
+                            join_all(futures)
+                                .await
+                                .into_iter()
+                                .map(|val| match val {
+                                    Value::List(mut entries) => {
+                                        match (entries.remove(0), entries.remove(0)) {
+                                            (Value::String(key), val) => Some((key, val)),
+                                            _ => None,
+                                        }
                                     }
-                                }
-                            ).filter_map(|v| v).collect()
+                                    _ => None,
+                                })
+                                .filter_map(|v| v)
+                                .collect(),
                         )
                     }
                     val => val,
@@ -76,25 +77,30 @@ impl NodeResource {
             code => {
                 dbg!("Holla holla!");
                 vm.run(code, None, None).await.unwrap_or_default()
-            },
+            }
         }
     }
 
-    fn args_to_extended_options(&self, args: Option<Vec<Value>>) -> Option<std::collections::HashMap<String, AskCodeOrValue>> {
+    fn args_to_extended_options(
+        &self,
+        args: Option<Vec<Value>>,
+    ) -> Option<std::collections::HashMap<String, AskCodeOrValue>> {
         match args {
-            Some(mut args) => if args.len() > 0 { 
-                match args.remove(0) {
-                    Value::Object(obj) => {
-                        Some(obj.into_iter()
-                        .map(|(k, v)| {
-                            (k, AskCodeOrValue::Value(v))
-                        })
-                        .collect())
-                    },
-                    _ => None
+            Some(mut args) => {
+                if args.len() > 0 {
+                    match args.remove(0) {
+                        Value::Object(obj) => Some(
+                            obj.into_iter()
+                                .map(|(k, v)| (k, AskCodeOrValue::Value(v)))
+                                .collect(),
+                        ),
+                        _ => None,
+                    }
+                } else {
+                    None
                 }
-             } else { None },
-            None => None
+            }
+            None => None,
         }
     }
 }
@@ -104,7 +110,13 @@ impl Resource for NodeResource {
     fn name(&self) -> String {
         "node".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
+    async fn compute(
+        &self,
+        vm: &AskVm,
+        code: AskCode,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> Value {
         let AskCode { name, params } = code;
         match params {
             Some(mut params) if params.len() >= 1 => {
@@ -113,14 +125,16 @@ impl Resource for NodeResource {
                 // dbg!(&extended_options);
                 let value_getter: AskCodeOrValue = params.remove(1);
                 // dbg!(&value_getter);
-                let value = vm.run(value_getter, None, extended_options).await.unwrap_or_default();
+                let value = vm
+                    .run(value_getter, None, extended_options)
+                    .await
+                    .unwrap_or_default();
                 // dbg!(&value);
                 if let Value::List(list) = value {
                     Value::List(
-                        join_all(
-                            list.into_iter()
-                                .map(|v| self.process(vm, AskCodeOrValue::new_value(v), children.clone())),
-                        )
+                        join_all(list.into_iter().map(|v| {
+                            self.process(vm, AskCodeOrValue::new_value(v), children.clone())
+                        }))
                         .await,
                     )
                 } else {
@@ -146,7 +160,13 @@ impl Resource for QueryResource {
     fn name(&self) -> String {
         "query".to_string()
     }
-    async fn compute(&self, vm: &AskVm, code: AskCode, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> Value {
+    async fn compute(
+        &self,
+        vm: &AskVm,
+        code: AskCode,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> Value {
         let AskCode { name, params } = code;
         return self
             .0
@@ -164,7 +184,7 @@ impl Resource for QueryResource {
                     }),
                 ),
                 None,
-                extended_options
+                extended_options,
             )
             .await;
     }

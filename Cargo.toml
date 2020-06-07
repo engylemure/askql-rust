@@ -8,3 +8,10 @@ edition = "2018"
 
 [dependencies]
 askql-parser = { path = "askql-parser", version = "0.1.0" }
+askql-vm = { path = "askql-vm", version = "0.1.0" }
+
+[workspace]
+members = [
+    "askql-parser",
+    "askql-vm"
+]

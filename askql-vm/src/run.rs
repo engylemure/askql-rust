@@ -2,10 +2,10 @@ use crate::r#type::ScalarType;
 use crate::resource::Resource;
 use crate::typed::{typed, untyped};
 use askql_parser::{AskCode, AskCodeOrValue, Value};
+use futures::future::{BoxFuture, FutureExt};
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::sync::Arc;
-use futures::future::{BoxFuture, FutureExt};
 
 pub struct RunOptions {
     pub resources: HashMap<String, Box<dyn Resource>>,
@@ -35,7 +35,12 @@ impl AskVm {
         }
     }
 
-    pub fn run(&self, code: AskCodeOrValue, args: Option<Vec<Value>>, extended_options: Option<HashMap<String, AskCodeOrValue>>) -> BoxFuture<Result<Value, ()>> {
+    pub fn run(
+        &self,
+        code: AskCodeOrValue,
+        args: Option<Vec<Value>>,
+        extended_options: Option<HashMap<String, AskCodeOrValue>>,
+    ) -> BoxFuture<Result<Value, ()>> {
         let options = self.options.clone();
         async move {
             match code {
@@ -45,7 +50,7 @@ impl AskVm {
                     } else {
                         Ok(Value::Int(number.to_int().unwrap_or(0)))
                     }
-                },
+                }
                 AskCodeOrValue::Value(value) => Ok(value),
                 AskCodeOrValue::AskCode(code) => {
                     // dbg!(&code.name);
@@ -60,18 +65,19 @@ impl AskVm {
                     match options.resources.get(&code.name) {
                         Some(resource) => {
                             Ok(resource.compute(self, code, args, extended_options).await)
-                        },
+                        }
                         None => match options.values.get(&code.name) {
                             Some(value) => self.run(value.clone(), args, None).await,
                             None => {
                                 // dbg!("Errr1");
-                                return Err(())
+                                return Err(());
                             }
                         },
                     }
                 }
             }
-        }.boxed()
+        }
+        .boxed()
     }
 }
 

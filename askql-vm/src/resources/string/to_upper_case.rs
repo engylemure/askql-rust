@@ -14,7 +14,7 @@ impl Resource for ToUpperCaseResource {
         if args.len() > 0 {
             match args.remove(0) {
                 Value::String(string) => Value::String(string.to_uppercase()),
-                value => value
+                value => value,
             }
         } else {
             Value::Null
