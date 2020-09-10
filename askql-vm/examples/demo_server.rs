@@ -15,36 +15,6 @@ struct Payload {
 }
 
 fn vm() -> AskVm {
-    let ask_resource = AskResource {};
-    let call_resource = CallResource {};
-    let get_resource = GetResource {};
-    let sum_resource = SumResource {};
-    let minus_resource = MinusResource {};
-    let times_resource = TimesResource {};
-    let concat_resource = ConcatResource {};
-    let max_resource = MaxResource {};
-    let list_resource = ListResource {};
-    let node_resource = NodeResource {};
-    let query_resource = QueryResource::new();
-    let fragment_resource = FragmentResource {};
-    let lowercase_resource = ToLowerCaseResource {};
-    let uppercase_resource = ToUpperCaseResource {};
-    let resources: Vec<Box<dyn askql_vm::resource::Resource>> = vec![
-        Box::new(ask_resource),
-        Box::new(call_resource),
-        Box::new(get_resource),
-        Box::new(sum_resource),
-        Box::new(minus_resource),
-        Box::new(times_resource),
-        Box::new(concat_resource),
-        Box::new(max_resource),
-        Box::new(list_resource),
-        Box::new(node_resource),
-        Box::new(query_resource),
-        Box::new(fragment_resource),
-        Box::new(lowercase_resource),
-        Box::new(uppercase_resource),
-    ];
     let mut values = std::collections::HashMap::new();
     values.insert(
         "firstName".to_string(),
@@ -52,7 +22,7 @@ fn vm() -> AskVm {
     );
     values.insert(
         "lastName".to_string(),
-        AskCodeOrValue::new_value(Value::String("SegundoNome".to_string())),
+        AskCodeOrValue::new_value(Value::String("SecondName".to_string())),
     );
     let mut friend0 = std::collections::BTreeMap::new();
     let mut friend1 = std::collections::BTreeMap::new();
@@ -60,17 +30,29 @@ fn vm() -> AskVm {
     friend0.insert("id".to_string(), Value::Int(1));
     friend0.insert(
         "firstName".to_string(),
-        Value::String("Friend 0".to_string()),
+        Value::String("Friend 1".to_string()),
+    );
+    friend0.insert(
+        "lastName".to_string(),
+        Value::String("1".to_string())
     );
     friend1.insert("id".to_string(), Value::Int(2));
     friend1.insert(
         "firstName".to_string(),
-        Value::String("Friend 1".to_string()),
+        Value::String("Friend 2".to_string()),
+    );
+    friend1.insert(
+        "lastName".to_string(),
+        Value::String("2".to_string())
     );
     friend2.insert("id".to_string(), Value::Int(3));
     friend2.insert(
         "firstName".to_string(),
-        Value::String("Friend 2".to_string()),
+        Value::String("Friend 3".to_string()),
+    );
+    friend2.insert(
+        "lastName".to_string(),
+        Value::String("3".to_string())
     );
     let friends = vec![
         Value::Object(friend0),
@@ -81,7 +63,22 @@ fn vm() -> AskVm {
         "friends".to_string(),
         AskCodeOrValue::new_value(Value::List(friends)),
     );
-    AskVm::new(RunOptions::new(resources, values))
+    let mut run_options = RunOptions::new(vec![], values);
+    run_options.register(AskResource);
+    run_options.register(CallResource);
+    run_options.register(GetResource);
+    run_options.register(SumResource);
+    run_options.register(MinusResource);
+    run_options.register(TimesResource);
+    run_options.register(ConcatResource);
+    run_options.register(MaxResource);
+    run_options.register(ListResource);
+    run_options.register(NodeResource);
+    run_options.register(QueryResource::new());
+    run_options.register(FragmentResource);
+    run_options.register(ToLowerCaseResource);
+    run_options.register(ToUpperCaseResource);
+    AskVm::new(run_options)
 }
 
 async fn ask(vm: web::Data<AskVm>, payload: web::Json<Payload>) -> Result<HttpResponse, Error> {
@@ -94,7 +91,7 @@ async fn ask(vm: web::Data<AskVm>, payload: web::Json<Payload>) -> Result<HttpRe
     };
     Ok(response
         .content_type("application/json")
-        .body(serde_json::to_string(&value)?))
+        .body(dbg!(serde_json::to_string(&value)?)))
 }
 
 #[actix_rt::main]

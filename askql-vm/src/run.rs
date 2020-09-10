@@ -22,6 +22,20 @@ impl RunOptions {
             values,
         }
     }
+
+    pub fn register<T: Resource + 'static>(&mut self, resource: T) -> Option<T> {
+        let name = resource.name();
+        self.register_with_name(resource, name)
+    }
+
+    pub fn register_with_name<T: Resource + 'static>(&mut self, resource: T, name: String) -> Option<T> {
+        if self.resources.contains_key(&name) {
+            Some(resource)
+        } else {
+            self.resources.insert(name, Box::new(resource));
+            None
+        }
+    }
 }
 
 pub struct AskVm {
@@ -87,25 +101,34 @@ mod tests {
     use crate::resources::*;
     use askql_parser::{AskCodeOrValue, Value};
 
+    fn new_vm(resources: Vec<Box<dyn crate::resource::Resource>>, values: HashMap<String, AskCodeOrValue>) -> AskVm {
+        let mut run_options = RunOptions::new(resources, values);
+        run_options.register(AskResource);
+        run_options.register(CallResource);
+        run_options.register(GetResource);
+        run_options.register(SumResource);
+        run_options.register(MinusResource);
+        run_options.register(TimesResource);
+        run_options.register(ConcatResource);
+        run_options.register(MaxResource);
+        run_options.register(ListResource);
+        run_options.register(NodeResource);
+        run_options.register(QueryResource::new());
+        run_options.register(FragmentResource);
+        run_options.register(ToLowerCaseResource);
+        run_options.register(ToUpperCaseResource);
+        AskVm::new(run_options)
+    }
+
     #[tokio::test]
     async fn basic_run() {
-        let vm = AskVm::new(RunOptions::new(vec![], HashMap::new()));
+        let vm = new_vm(vec![], HashMap::new());
         let code = AskCodeOrValue::Value(askql_parser::Value::Null);
         assert_eq!(vm.run(code, None, None).await, Ok(Value::Null))
     }
     #[tokio::test]
     async fn sum_operation() {
-        let ask_resource = AskResource {};
-        let call_resource = CallResource {};
-        let get_resource = GetResource {};
-        let sum_resource = SumResource {};
-        let resources: Vec<Box<dyn crate::resource::Resource>> = vec![
-            Box::new(ask_resource),
-            Box::new(call_resource),
-            Box::new(get_resource),
-            Box::new(sum_resource),
-        ];
-        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
+        let vm = new_vm(vec![], HashMap::new());
         let ask_code = "ask(call(get('+'),2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None, None).await;
@@ -114,20 +137,8 @@ mod tests {
 
     #[tokio::test]
     async fn minus_operation() {
-        let ask_resource = AskResource {};
-        let call_resource = CallResource {};
-        let get_resource = GetResource {};
-        let sum_resource = SumResource {};
-        let minus_resource = MinusResource {};
-        let resources: Vec<Box<dyn crate::resource::Resource>> = vec![
-            Box::new(ask_resource),
-            Box::new(call_resource),
-            Box::new(get_resource),
-            Box::new(sum_resource),
-            Box::new(minus_resource),
-        ];
-        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
-        let ask_code = "ask(call(get('-'),2,3,4,5.2))";
+        let vm = new_vm(vec![], HashMap::new());
+        let ask_code = "ask(call(get('-'),-2,3,4,5.2))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None, None).await;
         assert_eq!(Ok(Value::Float(-14.2)), result);
@@ -135,22 +146,69 @@ mod tests {
 
     #[tokio::test]
     async fn chained_operation() {
-        let ask_resource = AskResource {};
-        let call_resource = CallResource {};
-        let get_resource = GetResource {};
-        let sum_resource = SumResource {};
-        let minus_resource = MinusResource {};
-        let resources: Vec<Box<dyn crate::resource::Resource>> = vec![
-            Box::new(ask_resource),
-            Box::new(call_resource),
-            Box::new(get_resource),
-            Box::new(sum_resource),
-            Box::new(minus_resource),
-        ];
-        let vm = AskVm::new(RunOptions::new(resources, HashMap::new()));
-        let ask_code = "ask(call(get('-'),call(get('-'),2,3,4,5.2), call(get('+'),2,3,4,5.2)))";
+        let vm = new_vm(vec![], HashMap::new());
+        let ask_code = "ask(call(get('+'), call(get('-'),-2,3,4,5.2), call(get('+'),2,3,4,5.2)))";
         let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
         let result = vm.run(code, None, None).await;
-        assert_eq!(Ok(Value::Int(0)), result);
+        assert_eq!(Ok(Value::Float(0.0)), result);
+    }
+
+    #[tokio::test]
+    async fn complex_test() {
+        let mut values = std::collections::HashMap::new();
+        values.insert(
+            "firstName".to_string(),
+            AskCodeOrValue::new_value(Value::String("PrimeiroNome".to_string())),
+        );
+        values.insert(
+            "lastName".to_string(),
+            AskCodeOrValue::new_value(Value::String("SecondName".to_string())),
+        );
+        let mut friend0 = std::collections::BTreeMap::new();
+        let mut friend1 = std::collections::BTreeMap::new();
+        let mut friend2 = std::collections::BTreeMap::new();
+        friend0.insert("id".to_string(), Value::Int(1));
+        friend0.insert(
+            "firstName".to_string(),
+            Value::String("Friend 1".to_string()),
+        );
+        friend0.insert(
+            "lastName".to_string(),
+            Value::String("1".to_string())
+        );
+        friend1.insert("id".to_string(), Value::Int(2));
+        friend1.insert(
+            "firstName".to_string(),
+            Value::String("Friend 2".to_string()),
+        );
+        friend1.insert(
+            "lastName".to_string(),
+            Value::String("2".to_string())
+        );
+        friend2.insert("id".to_string(), Value::Int(3));
+        friend2.insert(
+            "firstName".to_string(),
+            Value::String("Friend 3".to_string()),
+        );
+        friend2.insert(
+            "lastName".to_string(),
+            Value::String("3".to_string())
+        );
+        let friends = vec![
+            Value::Object(friend0),
+            Value::Object(friend1),
+            Value::Object(friend2),
+        ];
+        values.insert(
+            "friends".to_string(),
+            AskCodeOrValue::new_value(Value::List(friends)),
+        );
+        let vm = new_vm(vec![], values);
+        let ask_code = "ask(query(node('firstName',f(call(get('concat'),call(get('toLowerCase'),get('firstName')),' ','is my ','name')))))";
+        let code = askql_parser::parse(ask_code.to_string(), false).unwrap();
+        let result = vm.run(code, None, None).await;
+        let mut object_result = std::collections::BTreeMap::new();
+        object_result.insert("firstName".to_string(), Value::String("primeironome is my name".to_string()));
+        assert_eq!(Ok(Value::Object(object_result)), result);
     }
 }
